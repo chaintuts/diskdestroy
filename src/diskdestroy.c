@@ -39,7 +39,7 @@ void destroy(char* disk_path)
 	rewind(disk);
 
 	// Confirm destruction
-	printf("Selected disk %s is %ld bytes\n", disk_path, size);
+	printf("Selected disk %s is %ld Megabytes\n", disk_path, (size / MEGABYTE));
 	printf("Are you sure you wish to destroy this disk?\n");
 	printf("All data will be PERMANENTLY UNRECOVERABLE\n");
 	printf("Confirm destruction: [y/n]");
@@ -53,13 +53,31 @@ void destroy(char* disk_path)
 		return;
 	}
 
-	// Zero out the disk from beginning to end
+	// Prepare output for progress update
+	setbuf(stdout, NULL);	
 	printf("Destroying disk\n");
-	int i;
-	for(i = 0; i < size; i++)
+	printf("Working: ");
+	
+	// Zero out the disk from beginning to end
+	// Do the first byte so that we never divide by zero in the progress indicator check
+	long int i;
+	fputc(0x0, disk);
+	for(i = 1; i < size; i++)
 	{
+		// Write the zero byte to disk
 		fputc(0x0, disk);
+	
+		// Display progress for the user
+		// Every N bytes, add to the progress indicator
+		if (i % PROGRESS_INDICATOR_BYTES == 0)
+		{
+			printf("\r");
+			printf("%ld of %ld Megabytes destroyed", (i / MEGABYTE), (size / MEGABYTE));
+		}
 	}
+	printf("\r");
+	printf("%ld of %ld Megabytes destroyed", (i / MEGABYTE), (size / MEGABYTE));
+	printf("\n");
 	
 	// Close the file and exit
 	fclose(disk);
